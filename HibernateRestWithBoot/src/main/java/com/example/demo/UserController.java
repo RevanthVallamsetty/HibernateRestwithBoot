@@ -3,6 +3,7 @@ package com.example.demo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,8 @@ public class UserController {
 
 @Autowired
 private UserDao userDao;
+@Autowired
+private EmailService emailService;
 
 @RequestMapping(method= RequestMethod.GET)
 public Iterable list(Model model){
@@ -36,6 +39,12 @@ public ResponseEntity saveProduct(@RequestBody User user){
 	if (userDao.findByFirstName(user.firstName))
 	{
     userDao.addUser(user);
+    try {
+    emailService.sendMail(user);
+    }
+    catch(MailException e) {
+    	System.out.println(e.getMessage());
+    }
     return new ResponseEntity("User saved successfully", HttpStatus.OK);
 	}
 	else
