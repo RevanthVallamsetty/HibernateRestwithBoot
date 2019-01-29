@@ -52,7 +52,8 @@ public class UserController {
 		if (userDao.findByFirstName(user.firstName))
 		{	
 			ResponseEntity<String> response=authenticationClient.validateEmail(user.email); 
-			if (response.getBody().equals("User is valid")) {
+			System.out.println(response.getBody());
+			if (response.getBody().equals("User is Valid")) {
 				userDao.addUser(user);
 				try {
 					emailService.sendMail(user);
