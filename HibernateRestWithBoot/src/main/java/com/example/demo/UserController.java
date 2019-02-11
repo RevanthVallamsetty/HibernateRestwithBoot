@@ -1,27 +1,35 @@
 package com.example.demo;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.mail.MailException;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.ribbon.http.HttpRequestBuilder;
 
-
+@CrossOrigin(origins = "*")
 @RefreshScope
 @RestController
 @RequestMapping("/app/users")
@@ -34,6 +42,7 @@ public class UserController {
 
 	@Autowired
 	private AuthenticationClient authenticationClient;
+
 
 	@RequestMapping(method= RequestMethod.GET)
 	public Iterable list(Model model){
@@ -53,7 +62,7 @@ public class UserController {
 		{	
 			ResponseEntity<String> response=authenticationClient.validateEmail(user.email); 
 			System.out.println(response.getBody());
-			if (response.getBody().equals("User is Valid")) {
+			if (response.getBody().equals("User is valid")) {
 				userDao.addUser(user);
 				try {
 					emailService.sendMail(user);
@@ -73,7 +82,8 @@ public class UserController {
 			return new ResponseEntity("User already exists", HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 	}
-
+    
+	
 	@RequestMapping(value = "/update/{id}", method = RequestMethod.PUT)
 	public ResponseEntity updateUser(@PathVariable Integer id, @RequestBody User user){
 		User user1 = userDao.getUserById(id);
@@ -85,13 +95,29 @@ public class UserController {
 		userDao.updateUser(user1);
 		return new ResponseEntity("User updated successfully", HttpStatus.OK); 
 	}
-
+	
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
 	public ResponseEntity delete(@PathVariable Integer id){
 		userDao.deleteUser(id);
 		return new ResponseEntity("User deleted successfully", HttpStatus.OK);
 
 	}
+	
+	@GetMapping(value = "/download/users.xlsx")
+    public ResponseEntity<InputStreamResource> excelCustomersReport() throws IOException {
+        List<User> users = (List<User>) userDao.getAllUsers();
+		
+		ByteArrayInputStream in = ExcelGenerator.usersToExcel(users);
+		// return IOUtils.toByteArray(in);
+		
+		HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=users.xlsx");
+		
+		 return ResponseEntity
+	                .ok()
+	                .headers(headers)
+	                .body(new InputStreamResource(in));
+    }
 
 
 }

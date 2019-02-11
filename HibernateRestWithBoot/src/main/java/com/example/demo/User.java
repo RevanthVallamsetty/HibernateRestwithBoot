@@ -6,6 +6,7 @@ import javax.persistence.*;
 @Table(name="user")
 public class User {
 	
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Id
 	public int id;
 	public String firstName;
